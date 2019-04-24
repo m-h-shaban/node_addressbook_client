@@ -8,7 +8,7 @@
       <div class="col-md-6 m-auto">
         <div class="card card-body">
           <h1 class="text-center mb-3">
-            <i class="fas fa-user-plus"></i> Add to Address Book<br>
+            <i class="fas fa-user-plus"></i> Edit Address Book<br>
           </h1>
           <form enctype="multipart/form-data">
             <div class="form-group">
@@ -34,7 +34,9 @@
             <div class="form-group">
               <!-- <label for="age">Age</label> -->
               <select id="age" v-model="age" name="age" class="form-control">
-                <option v-for="i in range(10, 85)">{{i}}</option>
+                <option v-for="i in range(10, 85)"
+                v-bind:value="i"
+                :selected="i == 'addressbook.age'">{{i}}</option>
               </select>
             </div>
             <div class="form-group">
@@ -45,7 +47,7 @@
                 class="form-control"
                 placeholder="Biography"
                 v-model="bio"></textarea>
-              <p class="error" v-if="errors.bio">{{ errors.bio.message }}</p>
+                <p class="error" v-if="errors.bio">{{ errors.bio.message }}</p>
             </div>
             <div class="form-group">
               <!-- <label for="country">Country</label> -->
@@ -102,7 +104,7 @@
                 v-model="postal_code"
               >
             </div>
-            <button @click="addToAddressBook" type="button" class="btn btn-primary btn-block">Add</button>
+            <button @click="updateAddressBook" type="button" class="btn btn-primary btn-block">Edit</button>
             <h3 v-if="message" class="success text-center mb-3">
               {{ message }}
             </h3>
@@ -111,27 +113,6 @@
         </div>
       </div>
     </div>
-
-    <div class="row mt-5">
-      <div class="col-md-12 m-auto">
-        <div class="row">
-          <div v-bind:key="addressbook.key" v-for="addressbook in addresses" class="col-md-4 mt-5">
-            <div class="card" style="">
-              <img class="card-img-top" v-bind:src="addressbook.image" alt="Card image cap">
-              <div class="card-body">
-                <h5 class="card-title">{{addressbook.name}}</h5>
-                <p class="card-text">{{addressbook.bio}}</p>
-                <p class="card-text">{{addressbook.age}}</p>
-                <p class="card-text">{{addressbook.country}} - {{addressbook.city}} - {{addressbook.address}} - {{addressbook.building_number}} - {{addressbook.postal_code}}</p>
-                <a @click="deleteAddressbook(addressbook.key)" class="btn btn-primary mr-5">Delete AddressBook</a>
-                <a @click="goToEdit(addressbook.key)" class="btn btn-primary">Edit AddressBook</a>
-              </div>
-            </div>
-          </div>
-          
-        </div>
-      </div>
-      </div>
     
   </div>
 </template>
@@ -154,7 +135,6 @@ export default {
       address: "",
       building_number: "",
       postal_code: "",
-      addresses: [],
       errors: []
     };
   },
@@ -162,7 +142,7 @@ export default {
     // HelloWorld
   },
   created() {
-    this.getAllAddresses();
+    this.getAddress();
   },
   methods: {
     range: function(min,max){
@@ -180,41 +160,33 @@ export default {
         .then(response => {
           this.message = response.data.message;
           setTimeout(() => {
-            this.$router.replace("login");
+            this.$router.push({ name: 'home'});
           }, 2000);
         })
         .catch(error => {
           this.errors = error.response.data.errors;
         });
     },
-    getAllAddresses: function(){
+    getAddress: function(){
       axios
-        .get("http://localhost:5000/api/v1/addressbooks/")
+        .get("http://localhost:5000/api/v1/addressbooks/"+this.$route.query.key)
         .then(response => {
-          this.addresses = response.data.addresses;
-          console.log(this.addresses);
-          
+          let address = response.data.address;
+          console.log(address);
+          this.name = address.name;
+          this.age = address.age;
+          this.bio = address.bio;
+          this.country = address.country;
+          this.city = address.city;
+          this.address = address.address;
+          this.building_number = address.building_number;
+          this.postal_code = address.postal_code;
         })
         .catch(error => {
           console.log(error);
         });
     },
-    goToEdit: function(key){
-      this.$router.push({ name: 'edit', query: { key: key } });
-    },
-    deleteAddressbook: function(key){
-      axios
-        .delete("http://localhost:5000/api/v1/addressbooks/"+key)
-        .then(response => {
-          this.message = response.data.message;
-          this.getAllAddresses();
-          })
-        .catch(error => {
-          this.errors = error.response.data.errors;
-          // console.log(error)
-        });
-    },
-    addToAddressBook: function(){
+    updateAddressBook: function(){
       let formData = new FormData();
       
       formData.append('file', this.$refs.file.files[0]);
@@ -228,7 +200,7 @@ export default {
       formData.append('postal_code', this.postal_code);
 
       axios
-        .post("http://localhost:5000/api/v1/addressbooks/add",
+        .put("http://localhost:5000/api/v1/addressbooks/"+this.$route.query.key,
         formData,
         {
             headers: {
@@ -237,15 +209,9 @@ export default {
         })
         .then(response => {
           this.message = response.data.message;
-          this.getAllAddresses();
-          this.name= "";
-          this.age= "";
-          this.bio= "";
-          this.country= "";
-          this.city= "";
-          this.address= "";
-          this.building_number= "";
-          this.postal_code= "";
+          setTimeout(() => {
+            this.$router.replace("home");
+          }, 2000);
         })
         .catch(error => {
           this.errors = error.response.data.errors;
