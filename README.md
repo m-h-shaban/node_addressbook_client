@@ -1,5 +1,7 @@
 # client
 
+# Vue js client
+
 ## Project setup
 ```
 npm install
